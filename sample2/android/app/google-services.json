@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "119833330228",
+    "project_id": "chatapp-c1b1f",
+    "storage_bucket": "chatapp-c1b1f.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:119833330228:android:b50caf142e2d840a960061",
+        "android_client_info": {
+          "package_name": "com.example.sample2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAjjsVK7yTXNUXSDRm-aDF-Ugfkci8bMHI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:119833330228:android:00d3214b37c579b8960061",
+        "android_client_info": {
+          "package_name": "com.example.shirotiti"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAjjsVK7yTXNUXSDRm-aDF-Ugfkci8bMHI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
