@@ -54,6 +54,13 @@ class _FaceDetectorViewState extends State<FaceDetectorView> {
     for (final face in faces) {
       text +=
       'smilingProbabilityの値: ${(face.smilingProbability! * 100).floor()}%\n\n';
+      final leftEyeContour = face.contours[FaceContourType.leftEye];
+      if (leftEyeContour != null) {
+        text += '左目の座標:\n';
+        for (var point in leftEyeContour.points) {
+          text += '(${point.x.toStringAsFixed(2)}, ${point.y.toStringAsFixed(2)})\n';
+        }
+      }
       _text = text;
     }
     _isBusy = false;
