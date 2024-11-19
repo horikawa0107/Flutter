@@ -350,58 +350,61 @@ class _HomePageState extends State<HomePage> {
   String? _text;
   String imageUrl = '';
   ui.Image? _croppedImage;
+  ui.Image? _uiImage;
   File? _image;
+  Image? _image2;
   String? _path;
   final picker = ImagePicker();
+  double? gxs;
+  double? gys;
+  double? height;
+  double? width;
 
-
-  Future _getImage() async {
-    //カメラロールから読み取る
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-    print("型は ${pickedFile.runtimeType}である");
-    print('${pickedFile?.path}');
-    if (pickedFile == null) return;
-    //Import dart:core
-    String uniqueFileName =
-    DateTime
-        .now()
-        .millisecondsSinceEpoch
-        .toString();
-
-    /*Step 2: Upload to Firebase storage*/
-    //Install firebase_storage
-    //Import the library
-
-    //Get a reference to storage root
-    Reference referenceRoot = FirebaseStorage.instance.ref();
-    Reference referenceDirImages =
-    referenceRoot.child('images');
-
-    //Create a reference for the image to be stored
-    Reference referenceImageToUpload =
-    referenceDirImages.child('name');
-
-    //Handle errors/success
+  /// File型からui.Image型に変換
+  Future<ui.Image?> _convertToUiImage(File file) async {
     try {
-      //Store the file
-      await referenceImageToUpload.putFile(File(pickedFile!.path));
-      print("success");
-      //Success: get the download URL
-      imageUrl = await referenceImageToUpload.getDownloadURL();
-    } catch (error) {
-      print("errer occured");
-      //Some error occurred
+      final Uint8List bytes = await file.readAsBytes();
+      final completer = Completer<ui.Image>();
+      ui.decodeImageFromList(bytes, (ui.Image img) {
+        completer.complete(img);
+      });
+      return await completer.future;
+    } catch (e) {
+      print("エラー: $e");
+      return null;
     }
-    if (pickedFile != null) {
-      await _processPickedFile(pickedFile); // 非同期処理を待つ
-
-      // _processPickedFile(pickedFile);
-    }
-    else{
-      print("No pickFile");
-    }
-    setState(() {});
   }
+
+  /// 画像を取得して処理
+  Future<void> _getImage() async {
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+
+    if (pickedFile == null) {
+      print("No pickFile");
+      return;
+    }
+
+    final file = File(pickedFile.path);
+    setState(() {
+      _image2 = Image.file(file); // Image.fileに格納
+    });
+
+    print("ダウンロードした画像の型は${_image2.runtimeType}");
+
+    // Fileからui.Image型に変換
+    final uiImage = await _convertToUiImage(file);
+
+    if (uiImage != null) {
+      await _processPickedFile(pickedFile);
+      setState(() {
+        _uiImage = uiImage; // ui.Image型を格納
+      });
+      print("ui.Imageに変換成功: 幅 ${uiImage.width}, 高さ ${uiImage.height}");
+    } else {
+      print("ui.Imageへの変換に失敗しました");
+    }
+  }
+
 
   Future<ui.Image>? loadImageFromAssets(String path) async {
     ByteData data = await rootBundle.load(path);
@@ -421,45 +424,60 @@ class _HomePageState extends State<HomePage> {
     return completer.future;
   }
 
-  Future<void> loadAndDisplayImage() async {
-    String imagePath = 'assets/58.png';
 
-    // 画像を読み込む
-    ui.Image? image = await loadImageFromAssets(imagePath);
-    print("変換された画像の型は${image.runtimeType}です。");
+  /// File型からui.Image型に変換する関数
+  Future<ui.Image?> fileToUiImage(XFile file) async {
+    try {
+      // 1. Fileからバイトデータを読み取る
+      final Uint8List bytes = await file.readAsBytes();
 
-    if (image != null) {
-      print('画像の幅: ${image.width}');
-      print('画像の高さ: ${image.height}');
-    } else {
-      print('画像の読み込みに失敗しました');
+      // 2. バイトデータをui.Imageに変換
+      final completer = Completer<ui.Image>();
+      ui.decodeImageFromList(bytes, (ui.Image img) {
+        completer.complete(img);
+      });
+
+      return await completer.future;
+    } catch (e) {
+      print("エラー: $e");
+      return null;
     }
-
   }
 
-  Future<void> _loadImage() async {
-    // アセット画像を読み込む
-    final data = await rootBundle.load('assets/58.png');
-    final image = await decodeImageFromList(data.buffer.asUint8List());
 
-    // 切り抜き範囲 (例: 左上から100x100ピクセル)
-    final cropRect = Rect.fromLTWH(50, 50, 100, 100);
+
+  Future<void> _loadImage2() async {
+    if (_uiImage == null) return;
+    print("_loadImage2 start");
+    print(width);
+    print(height);
+
+    // 切り抜き範囲
+    final cropRect2 = Rect.fromLTWH(gxs!, gys!, width!, height!);
+    print(cropRect2);
 
     // 画像を切り抜き
-    final cropped = await cropImage(image, cropRect);
+    final cropped = await cropImage(_uiImage!, cropRect2);
+
+    print("cropped ok");
 
     // 状態を更新
     setState(() {
       _croppedImage = cropped;
     });
+    print("setStates ok");
   }
+
   Future<ui.Image> cropImage(
       ui.Image image, // 元の画像
       Rect cropRect,  // 切り抜きたい領域
       ) async {
     // 新しい画像の幅と高さ
+    print(cropRect);
     final int newWidth = cropRect.width.toInt();
     final int newHeight = cropRect.height.toInt();
+    print("画像の幅は${newWidth}です");
+    print("画像の高さは${newHeight}です");
 
     // PictureRecorderを使用して描画
     final recorder = ui.PictureRecorder();
@@ -509,19 +527,22 @@ class _HomePageState extends State<HomePage> {
     int ys=10000;
     int ye=0;
 
+
     print("画像の型は${inputImage.runtimeType}");
+    // print(inputImage.width);
     final faces = await _faceDetector.processImage(inputImage);
+    print(faces.runtimeType);
     String text = '検出された顔の数: ${faces.length}\n\n';
 
     for (final face in faces) {
       text += 'smilingProbabilityの値: ${(face.smilingProbability! * 100).floor()}%\n\n';
       final leftEyeContour = face.contours[FaceContourType.leftEye];
+      final rightEyeContour = face.contours[FaceContourType.rightEye];
 
-      if (leftEyeContour != null) {
+      if (rightEyeContour != null) {
         text += '左目の座標:\n';
-        for (var point in leftEyeContour.points) {
+        for (var point in rightEyeContour.points) {
           text += '(${point.x.toStringAsFixed(2)}, ${point.y.toStringAsFixed(2)})\n';
-          print("型は${point.runtimeType}");
 
           // 最小値と最大値を計算
           if (point.x < xs) xs = point.x;
@@ -532,6 +553,16 @@ class _HomePageState extends State<HomePage> {
         }
         text += '\n左目領域のX範囲: xs=${xs.toStringAsFixed(2)}, xe=${xe.toStringAsFixed(2)}\n';
         text += '左目領域のY範囲: ys=${ys.toStringAsFixed(2)}, ye=${ye.toStringAsFixed(2)}\n';
+        setState(() {
+          gxs = double.parse(xs.toStringAsFixed(2));
+          height = double.parse(ye.toStringAsFixed(2))-double.parse(ys.toStringAsFixed(2));
+          gys = double.parse(ys.toStringAsFixed(2));
+          width = double.parse(xe.toStringAsFixed(2))-double.parse(xs.toStringAsFixed(2));
+        });
+        print("幅は${width}");
+        print("高さは${height}");
+
+
       }
       _text = text;
       print(_text);
@@ -567,24 +598,19 @@ class _HomePageState extends State<HomePage> {
                                   painter: ImagePainter(_croppedImage!),
                                   size: Size(_croppedImage!.width.toDouble(), _croppedImage!.height.toDouble()),
                                 ),),
-                // Container(
-                //   width: 300,
-                //   child: _croppedImage == null
-                //       ? Text('No image selected.')
-                //       : Image.file(_image!)),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 FloatingActionButton(
-                  onPressed: _loadImage,
-                  tooltip: 'convert Image From assets',
-                  child: Icon(Icons.home),
-                ),
-                FloatingActionButton(
                   onPressed: _getImage,
                   tooltip: 'Pick Image From Gallery',
                   child: Icon(Icons.photo_library),
+                ),
+                FloatingActionButton(
+                  onPressed: _loadImage2,
+                  tooltip: 'crop image From assets',
+                  child: Icon(Icons.android),
                 ),
               ],
             )
