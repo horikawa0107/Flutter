@@ -350,17 +350,26 @@ class _HomePageState extends State<HomePage> {
   bool _isBusy = false;
   String? _text;
   String imageUrl = '';
-  ui.Image? _croppedImage;
+  ui.Image? _croppedImage_nose;
+  ui.Image? _croppedImage_rightEye;
+  ui.Image? _croppedImage_mouth;
+  ui.Image? _croppedImage_leftEye;
   ui.Image? _uiImage;
   File? _image;
   Image? _image2;
   String? _path;
   final picker = ImagePicker();
-  double? gxs;
-  double? gys;
-  double? height;
-  double? width;
-  List<double> xy = [];
+  // double? gxs;
+  // double? gys;
+  // double? height;
+  // double? width;
+  //xy[gxs,gys,height,width]
+  List<double> xy_nose = [];
+  List<double> xy_rightEye = [];
+  List<double> xy_leftEye = [];
+  List<double> xy_mouth = [];
+
+
 
 
 
@@ -452,22 +461,34 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _loadImage2() async {
     if (_uiImage == null) return;
+    print(xy_nose);
     print("_loadImage2 start");
-    print(width);
-    print(height);
+    print(xy_nose[3]);
+    print(xy_nose[2]);
 
     // 切り抜き範囲
-    final cropRect2 = Rect.fromLTWH(gxs!, gys!, width!, height!);
-    print(cropRect2);
+    final cropRect_nose = Rect.fromLTWH(xy_nose[0]!, xy_nose[1]!, xy_nose[3]!, xy_nose[2]!);
+    final cropRect_rightEye = Rect.fromLTWH(xy_rightEye[0]!, xy_rightEye[1]!, xy_rightEye[3]!, xy_rightEye[2]!);
+    final cropRect_leftEye = Rect.fromLTWH(xy_leftEye[0]!, xy_leftEye[1]!, xy_leftEye[3]!, xy_leftEye[2]!);
+    final cropRect_mouth = Rect.fromLTWH(xy_mouth[0]!, xy_mouth[1]!, xy_mouth[3]!, xy_mouth[2]!);
+
+    print(cropRect_nose);
 
     // 画像を切り抜き
-    final cropped = await cropImage(_uiImage!, cropRect2);
+    final cropped_nose = await cropImage(_uiImage!, cropRect_nose);
+    final cropped_righEye = await cropImage(_uiImage!, cropRect_rightEye);
+    final cropped_leftEye = await cropImage(_uiImage!, cropRect_leftEye);
+    final cropped_mouth = await cropImage(_uiImage!, cropRect_mouth);
 
     print("cropped ok");
 
     // 状態を更新
     setState(() {
-      _croppedImage = cropped;
+      _croppedImage_nose = cropped_nose;
+      _croppedImage_rightEye = cropped_righEye;
+      _croppedImage_leftEye = cropped_leftEye;
+      _croppedImage_mouth=cropped_mouth;
+
     });
     print("setStates ok");
   }
@@ -526,10 +547,7 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _text = '';
     });
-    int xs=10000;
-    int xe=0;
-    int ys=10000;
-    int ye=0;
+
 
 
     print("画像の型は${inputImage.runtimeType}");
@@ -547,9 +565,46 @@ class _HomePageState extends State<HomePage> {
       final upperLipTop = face.contours[FaceContourType.upperLipTop];
       final lowerLipBottom = face.contours[FaceContourType.lowerLipBottom];
 
+      if (upperLipTop != null && lowerLipBottom != null) {
+        text += '口の座標:\n';
+
+        // 上唇と下唇の全座標を結合
+        final lipPoints = [...upperLipTop.points, ...lowerLipBottom.points];
+
+        int xs = 10000;
+        int xe = 0;
+        int ys = 10000;
+        int ye = 0;
+
+        for (var point in lipPoints) {
+          text += '(${point.x.toStringAsFixed(2)}, ${point.y.toStringAsFixed(2)})\n';
+
+          // 最小値と最大値を計算
+          if (point.x < xs) xs = point.x;
+          if (point.x > xe) xe = point.x;
+          if (point.y < ys) ys = point.y;
+          if (point.y > ye) ye = point.y;
+        }
+
+        text += '\n口領域のX範囲: xs=${xs.toStringAsFixed(2)}, xe=${xe.toStringAsFixed(2)}\n';
+        text += '口領域のY範囲: ys=${ys.toStringAsFixed(2)}, ye=${ye.toStringAsFixed(2)}\n';
+
+        setState(() {
+          xy_mouth = [
+            double.parse(xs.toStringAsFixed(2)),
+            double.parse(ys.toStringAsFixed(2)),
+            double.parse(ye.toStringAsFixed(2)) - double.parse(ys.toStringAsFixed(2)),
+            double.parse(xe.toStringAsFixed(2)) - double.parse(xs.toStringAsFixed(2))
+          ];
+        });
+      }
       if (noseBridge != null && noseBottom != null) {
         text += '鼻の座標:\n';
         final nosePoints = [...noseBridge.points, ...noseBottom.points]; // 鼻全体の座標
+        int xs=10000;
+        int xe=0;
+        int ys=10000;
+        int ye=0;
         for (var point in nosePoints) {
           text += '(${point.x.toStringAsFixed(2)}, ${point.y.toStringAsFixed(2)})\n';
 
@@ -562,35 +617,62 @@ class _HomePageState extends State<HomePage> {
         text += '\n鼻領域のX範囲: xs=${xs.toStringAsFixed(2)}, xe=${xe.toStringAsFixed(2)}\n';
         text += '鼻領域のY範囲: ys=${ys.toStringAsFixed(2)}, ye=${ye.toStringAsFixed(2)}\n';
         setState(() {
-              gxs = double.parse(xs.toStringAsFixed(2));
-              height = double.parse(ye.toStringAsFixed(2))-double.parse(ys.toStringAsFixed(2));
-              gys = double.parse(ys.toStringAsFixed(2));
-              width = double.parse(xe.toStringAsFixed(2))-double.parse(xs.toStringAsFixed(2));
-            });
+          xy_nose=[double.parse(xs.toStringAsFixed(2)),double.parse(ys.toStringAsFixed(2)),double.parse(ye.toStringAsFixed(2))-double.parse(ys.toStringAsFixed(2)),double.parse(xe.toStringAsFixed(2))-double.parse(xs.toStringAsFixed(2))];
+
+        });
       }
-      // if (leftEyeContour != null) {
-      //   text += '左目の座標:\n';
-      //   for (var point in leftEyeContour.points) {
-      //     text += '(${point.x.toStringAsFixed(2)}, ${point.y.toStringAsFixed(2)})\n';
-      //
-      //     // 最小値と最大値を計算
-      //     if (point.x < xs) xs = point.x;
-      //     if (point.x > xe) xe = point.x;
-      //     if (point.y < ys) ys = point.y;
-      //     if (point.y > ye) ye = point.y;
-      //
-      //   }
-      //   text += '\n左目領域のX範囲: xs=${xs.toStringAsFixed(2)}, xe=${xe.toStringAsFixed(2)}\n';
-      //   text += '左目領域のY範囲: ys=${ys.toStringAsFixed(2)}, ye=${ye.toStringAsFixed(2)}\n';
-      //   setState(() {
-      //     gxs = double.parse(xs.toStringAsFixed(2));
-      //     height = double.parse(ye.toStringAsFixed(2))-double.parse(ys.toStringAsFixed(2));
-      //     gys = double.parse(ys.toStringAsFixed(2));
-      //     width = double.parse(xe.toStringAsFixed(2))-double.parse(xs.toStringAsFixed(2));
-      //   });
-      //   print("幅は${width}");
-      //   print("高さは${height}");
-      // }
+      if (rightEyeContour != null) {
+        text += '右目の座標:\n';
+        int xs=10000;
+        int xe=0;
+        int ys=10000;
+        int ye=0;
+        for (var point in rightEyeContour.points) {
+          text += '(${point.x.toStringAsFixed(2)}, ${point.y.toStringAsFixed(2)})\n';
+
+          // 最小値と最大値を計算
+          if (point.x < xs) xs = point.x;
+          if (point.x > xe) xe = point.x;
+          if (point.y < ys) ys = point.y;
+          if (point.y > ye) ye = point.y;
+
+        }
+        text += '\n右目領域のX範囲: xs=${xs.toStringAsFixed(2)}, xe=${xe.toStringAsFixed(2)}\n';
+        text += '右目領域のY範囲: ys=${ys.toStringAsFixed(2)}, ye=${ye.toStringAsFixed(2)}\n';
+        setState(() {
+          xy_rightEye=[double.parse(xs.toStringAsFixed(2)),
+            double.parse(ys.toStringAsFixed(2)),
+            double.parse(ye.toStringAsFixed(2))-double.parse(ys.toStringAsFixed(2)),
+            double.parse(xe.toStringAsFixed(2))-double.parse(xs.toStringAsFixed(2))];
+
+        });
+      }
+      if (leftEyeContour != null) {
+        text += '左目の座標:\n';
+        int xs=10000;
+        int xe=0;
+        int ys=10000;
+        int ye=0;
+        for (var point in leftEyeContour.points) {
+          text += '(${point.x.toStringAsFixed(2)}, ${point.y.toStringAsFixed(2)})\n';
+
+          // 最小値と最大値を計算
+          if (point.x < xs) xs = point.x;
+          if (point.x > xe) xe = point.x;
+          if (point.y < ys) ys = point.y;
+          if (point.y > ye) ye = point.y;
+
+        }
+        text += '\n左目領域のX範囲: xs=${xs.toStringAsFixed(2)}, xe=${xe.toStringAsFixed(2)}\n';
+        text += '左目領域のY範囲: ys=${ys.toStringAsFixed(2)}, ye=${ye.toStringAsFixed(2)}\n';
+        setState(() {
+          xy_leftEye=[double.parse(xs.toStringAsFixed(2)),
+            double.parse(ys.toStringAsFixed(2)),
+            double.parse(ye.toStringAsFixed(2))-double.parse(ys.toStringAsFixed(2)),
+            double.parse(xe.toStringAsFixed(2))-double.parse(xs.toStringAsFixed(2))];
+
+        });
+      }
 
       _text = text;
       print(_text);
@@ -620,11 +702,11 @@ class _HomePageState extends State<HomePage> {
                 child:
               Container(
                 width: 300,
-                child: _croppedImage == null
+                child: _croppedImage_nose == null
                     ? Text('No image selected.')
                     : CustomPaint(
-                                  painter: ImagePainter(_croppedImage!),
-                                  size: Size(_croppedImage!.width.toDouble(), _croppedImage!.height.toDouble()),
+                                  painter: ImagePainter(_croppedImage_nose!),
+                                  size: Size(_croppedImage_nose!.width.toDouble(), _croppedImage_nose!.height.toDouble()),
                                 ),),
             ),
             Row(
@@ -642,7 +724,7 @@ class _HomePageState extends State<HomePage> {
                 ),
                 FloatingActionButton(
                   onPressed:(){ Navigator.push(
-                      context, MaterialPageRoute(builder: (builder) => GamePage(_croppedImage!,_croppedImage!)));},
+                      context, MaterialPageRoute(builder: (builder) => GamePage(_croppedImage_nose!,_croppedImage_rightEye!,_croppedImage_leftEye!,_croppedImage_mouth!)));},
                   tooltip: 'crop image From assets',
                   child: Icon(Icons.home),
                 ),
