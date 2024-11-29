@@ -300,6 +300,7 @@ import 'dart:async' show Future;
 import 'dart:ui' as ui;
 import 'dart:async';
 import 'dart:typed_data';
+import "game.dart";
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -359,6 +360,9 @@ class _HomePageState extends State<HomePage> {
   double? gys;
   double? height;
   double? width;
+  List<double> xy = [];
+
+
 
   /// File型からui.Image型に変換
   Future<ui.Image?> _convertToUiImage(File file) async {
@@ -529,19 +533,24 @@ class _HomePageState extends State<HomePage> {
 
 
     print("画像の型は${inputImage.runtimeType}");
-    // print(inputImage.width);
     final faces = await _faceDetector.processImage(inputImage);
     print(faces.runtimeType);
     String text = '検出された顔の数: ${faces.length}\n\n';
 
     for (final face in faces) {
       text += 'smilingProbabilityの値: ${(face.smilingProbability! * 100).floor()}%\n\n';
+      final nose = face.contours[FaceContourType.noseBottom];
       final leftEyeContour = face.contours[FaceContourType.leftEye];
       final rightEyeContour = face.contours[FaceContourType.rightEye];
+      final noseBridge = face.contours[FaceContourType.noseBridge];
+      final noseBottom = face.contours[FaceContourType.noseBottom];
+      final upperLipTop = face.contours[FaceContourType.upperLipTop];
+      final lowerLipBottom = face.contours[FaceContourType.lowerLipBottom];
 
-      if (rightEyeContour != null) {
-        text += '左目の座標:\n';
-        for (var point in rightEyeContour.points) {
+      if (noseBridge != null && noseBottom != null) {
+        text += '鼻の座標:\n';
+        final nosePoints = [...noseBridge.points, ...noseBottom.points]; // 鼻全体の座標
+        for (var point in nosePoints) {
           text += '(${point.x.toStringAsFixed(2)}, ${point.y.toStringAsFixed(2)})\n';
 
           // 最小値と最大値を計算
@@ -549,21 +558,40 @@ class _HomePageState extends State<HomePage> {
           if (point.x > xe) xe = point.x;
           if (point.y < ys) ys = point.y;
           if (point.y > ye) ye = point.y;
-
         }
-        text += '\n左目領域のX範囲: xs=${xs.toStringAsFixed(2)}, xe=${xe.toStringAsFixed(2)}\n';
-        text += '左目領域のY範囲: ys=${ys.toStringAsFixed(2)}, ye=${ye.toStringAsFixed(2)}\n';
+        text += '\n鼻領域のX範囲: xs=${xs.toStringAsFixed(2)}, xe=${xe.toStringAsFixed(2)}\n';
+        text += '鼻領域のY範囲: ys=${ys.toStringAsFixed(2)}, ye=${ye.toStringAsFixed(2)}\n';
         setState(() {
-          gxs = double.parse(xs.toStringAsFixed(2));
-          height = double.parse(ye.toStringAsFixed(2))-double.parse(ys.toStringAsFixed(2));
-          gys = double.parse(ys.toStringAsFixed(2));
-          width = double.parse(xe.toStringAsFixed(2))-double.parse(xs.toStringAsFixed(2));
-        });
-        print("幅は${width}");
-        print("高さは${height}");
-
-
+              gxs = double.parse(xs.toStringAsFixed(2));
+              height = double.parse(ye.toStringAsFixed(2))-double.parse(ys.toStringAsFixed(2));
+              gys = double.parse(ys.toStringAsFixed(2));
+              width = double.parse(xe.toStringAsFixed(2))-double.parse(xs.toStringAsFixed(2));
+            });
       }
+      // if (leftEyeContour != null) {
+      //   text += '左目の座標:\n';
+      //   for (var point in leftEyeContour.points) {
+      //     text += '(${point.x.toStringAsFixed(2)}, ${point.y.toStringAsFixed(2)})\n';
+      //
+      //     // 最小値と最大値を計算
+      //     if (point.x < xs) xs = point.x;
+      //     if (point.x > xe) xe = point.x;
+      //     if (point.y < ys) ys = point.y;
+      //     if (point.y > ye) ye = point.y;
+      //
+      //   }
+      //   text += '\n左目領域のX範囲: xs=${xs.toStringAsFixed(2)}, xe=${xe.toStringAsFixed(2)}\n';
+      //   text += '左目領域のY範囲: ys=${ys.toStringAsFixed(2)}, ye=${ye.toStringAsFixed(2)}\n';
+      //   setState(() {
+      //     gxs = double.parse(xs.toStringAsFixed(2));
+      //     height = double.parse(ye.toStringAsFixed(2))-double.parse(ys.toStringAsFixed(2));
+      //     gys = double.parse(ys.toStringAsFixed(2));
+      //     width = double.parse(xe.toStringAsFixed(2))-double.parse(xs.toStringAsFixed(2));
+      //   });
+      //   print("幅は${width}");
+      //   print("高さは${height}");
+      // }
+
       _text = text;
       print(_text);
     }
@@ -611,6 +639,12 @@ class _HomePageState extends State<HomePage> {
                   onPressed: _loadImage2,
                   tooltip: 'crop image From assets',
                   child: Icon(Icons.android),
+                ),
+                FloatingActionButton(
+                  onPressed:(){ Navigator.push(
+                      context, MaterialPageRoute(builder: (builder) => GamePage(_croppedImage!,_croppedImage!)));},
+                  tooltip: 'crop image From assets',
+                  child: Icon(Icons.home),
                 ),
               ],
             )
