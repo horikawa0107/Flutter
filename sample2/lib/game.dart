@@ -15,24 +15,24 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> {
-  Offset _image1Offset = Offset.zero; // 鼻
-  Offset _image2Offset = Offset.zero; // 右目
-  Offset _image3Offset = Offset.zero; // 左目
-  Offset _image4Offset = Offset.zero; // 口
+  Offset _image1Offset = Offset(40,650); // 鼻
+  Offset _image2Offset = Offset(125,700); // 右目
+  Offset _image3Offset = Offset(200,700); // 左目
+  Offset _image4Offset = Offset(280,700); // 口
   Offset _startDragOffset = Offset.zero;
   int? _draggingImageIndex;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: Color(0xFFFFFF98),
       appBar: AppBar(
-        backgroundColor: Color(0xFF93c9ff),
+        backgroundColor: Color(0xFFFFFF98),
         title: Text(
           "入室",
           style: TextStyle(
             fontSize: 25,
-            color: Colors.white,
+            // color: Colors.white,
           ),
         ),
       ),
@@ -41,11 +41,24 @@ class _GamePageState extends State<GamePage> {
           builder: (context, constraints) {
             return Stack(
               children: [
-                // 背景画像
-                Positioned.fill(
-                  child: Image.asset(
-                    'assets/fukuwarai.png',
-                    fit: BoxFit.cover,
+                Align(
+                  alignment: Alignment.topCenter, // 背景画像を中央に配置
+                  child: Container(
+                    width: 360,
+                    height: 500,
+                    child: Image.asset(
+                      'assets/fukuwarai.png',
+                      fit: BoxFit.contain, // 画像全体を表示し、アスペクト比を維持
+                    ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: Container(
+                    width: 370, // 四角形の幅
+                    height: 150, // 四角形の高さ
+                    margin: const EdgeInsets.only(bottom: 20), // 画面下部からの余白
+                    color: Colors.white, // 四角形の色
                   ),
                 ),
                 // ドラッグ操作
@@ -115,6 +128,7 @@ class _GamePageState extends State<GamePage> {
                     ),
                   ),
                 ),
+
               ],
             );
           },

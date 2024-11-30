@@ -66,6 +66,8 @@ flutter:
   assets:
     - assets/58.png
     - assets/fukuwarai.png
+    - assets/fukuwarai2.png
+    - assets/22179350.png
       # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
