@@ -42,6 +42,7 @@ class _SelectPageState extends State<SelectPage> {
   ui.Image? _croppedImage_rightEye;
   ui.Image? _croppedImage_mouth;
   ui.Image? _croppedImage_leftEye;
+  ui.Image? _processImage_face;
   ui.Image? _uiImage;
   File? _image;
   Image? _image2;
@@ -52,11 +53,39 @@ class _SelectPageState extends State<SelectPage> {
   List<double> xy_rightEye = [];
   List<double> xy_leftEye = [];
   List<double> xy_mouth = [];
+  List<double> xy_face = [];
+  Color? face_color;
+  List<Rect> list_rect=[];
 
 
+  Future<void> getPixelColor(ui.Image image, int x, int y) async {
+    try {
+      // 画像のピクセルデータを取得
+      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
 
+      if (byteData == null) return null;
 
+      // 画像の幅を取得
+      final int width = image.width;
 
+      // 座標 (x, y) のピクセルの位置を計算
+      final int pixelIndex = (y * width + x) * 4; // RGBA各1byteなので*4
+
+      // 各色成分を抽出
+      final int red = byteData.getUint8(pixelIndex);
+      final int green = byteData.getUint8(pixelIndex + 1);
+      final int blue = byteData.getUint8(pixelIndex + 2);
+      final int alpha = byteData.getUint8(pixelIndex + 3);
+
+      // Color型に変換して返す
+      setState(() {
+        face_color=Color.fromARGB(alpha, red, green, blue);
+      });
+    } catch (e) {
+      print("Error extracting pixel color: $e");
+      return null;
+    }
+  }
   /// File型からui.Image型に変換
   Future<ui.Image?> _convertToUiImage(File file) async {
     try {
@@ -86,7 +115,6 @@ class _SelectPageState extends State<SelectPage> {
       _image2 = Image.file(file); // Image.fileに格納
     });
 
-    print("ダウンロードした画像の型は${_image2.runtimeType}");
 
     // Fileからui.Image型に変換
     final uiImage = await _convertToUiImage(file);
@@ -102,7 +130,37 @@ class _SelectPageState extends State<SelectPage> {
     }
   }
 
+  Future<ui.Image> fillRectOnImage(
+      ui.Image originalImage, List<Rect> list_rect, Color fillColor) async {
+    // 新しい画像を描画するためのRecorder
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+    print(list_rect);
 
+    // 元の画像を描画
+    canvas.drawImage(originalImage, Offset.zero, Paint());
+
+    // 塗りつぶし矩形を描画
+    final paint = Paint()..color = fillColor;
+
+    for (Rect rect in list_rect) {
+      Rect new_rect= Rect.fromLTWH(rect.left-5, rect.top-5, rect.width+10, rect.height+8);
+      canvas.drawRect(new_rect, paint);
+    }
+
+    // 新しい画像を作成
+    final picture = recorder.endRecording();
+    final newImage = await picture.toImage(
+        originalImage.width, originalImage.height);
+
+    return newImage;
+  }
+
+// ユーティリティ関数：画像をByteDataに変換し、UIで使用可能
+  Future<Uint8List> convertImageToBytes(ui.Image image) async {
+    final byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+    return byteData!.buffer.asUint8List();
+  }
 
 
   /// File型からui.Image型に変換する関数
@@ -128,16 +186,19 @@ class _SelectPageState extends State<SelectPage> {
 
   Future<void> _loadImage2() async {
     if (_uiImage == null) return;
-    print(xy_nose);
     print("_loadImage2 start");
-    print(xy_nose[3]);
-    print(xy_nose[2]);
+    getPixelColor(_uiImage!,xy_nose[0].toInt()+50,xy_nose[1].toInt()+40);
+
 
     // 切り抜き範囲
     final cropRect_nose = Rect.fromLTWH(xy_nose[0]!, xy_nose[1]!, xy_nose[3]!, xy_nose[2]!);
     final cropRect_rightEye = Rect.fromLTWH(xy_rightEye[0]!, xy_rightEye[1]!, xy_rightEye[3]!, xy_rightEye[2]!);
     final cropRect_leftEye = Rect.fromLTWH(xy_leftEye[0]!, xy_leftEye[1]!, xy_leftEye[3]!, xy_leftEye[2]!);
     final cropRect_mouth = Rect.fromLTWH(xy_mouth[0]!, xy_mouth[1]!, xy_mouth[3]!, xy_mouth[2]!);
+    setState(() {
+      list_rect=[cropRect_nose,cropRect_rightEye,cropRect_leftEye,cropRect_mouth];
+    });
+    // final cropRect_face = Rect.fromLTWH(xy_face[0]!, xy_face[1]!, xy_face[3]!, xy_face[2]!);
 
     print(cropRect_nose);
 
@@ -146,7 +207,13 @@ class _SelectPageState extends State<SelectPage> {
     final cropped_righEye = await cropImage(_uiImage!, cropRect_rightEye);
     final cropped_leftEye = await cropImage(_uiImage!, cropRect_leftEye);
     final cropped_mouth = await cropImage(_uiImage!, cropRect_mouth);
-
+    if (face_color!=null || list_rect!=null ){
+    final processface = await fillRectOnImage(_uiImage!, list_rect, face_color!);
+    print(processface);
+    setState(() {
+      _processImage_face=processface;
+    });
+    }
     print("cropped ok");
 
     // 状態を更新
@@ -155,7 +222,6 @@ class _SelectPageState extends State<SelectPage> {
       _croppedImage_rightEye = cropped_righEye;
       _croppedImage_leftEye = cropped_leftEye;
       _croppedImage_mouth=cropped_mouth;
-
     });
     print("setStates ok");
   }
@@ -168,8 +234,6 @@ class _SelectPageState extends State<SelectPage> {
     print(cropRect);
     final int newWidth = cropRect.width.toInt();
     final int newHeight = cropRect.height.toInt();
-    print("画像の幅は${newWidth}です");
-    print("画像の高さは${newHeight}です");
 
     // PictureRecorderを使用して描画
     final recorder = ui.PictureRecorder();
@@ -231,6 +295,7 @@ class _SelectPageState extends State<SelectPage> {
       final noseBottom = face.contours[FaceContourType.noseBottom];
       final upperLipTop = face.contours[FaceContourType.upperLipTop];
       final lowerLipBottom = face.contours[FaceContourType.lowerLipBottom];
+      final faceContour = face.contours[FaceContourType.face];
 
       if (upperLipTop != null && lowerLipBottom != null) {
         text += '口の座標:\n';
@@ -340,9 +405,35 @@ class _SelectPageState extends State<SelectPage> {
 
         });
       }
+      if (faceContour != null) {
+        text += '顔の座標:\n';
+        int xs=10000;
+        int xe=0;
+        int ys=10000;
+        int ye=0;
+        for (var point in faceContour.points) {
+          text += '(${point.x.toStringAsFixed(2)}, ${point.y.toStringAsFixed(2)})\n';
+
+          // 最小値と最大値を計算
+          if (point.x < xs) xs = point.x;
+          if (point.x > xe) xe = point.x;
+          if (point.y < ys) ys = point.y;
+          if (point.y > ye) ye = point.y;
+
+        }
+        text += '\n顔領域のX範囲: xs=${xs.toStringAsFixed(2)}, xe=${xe.toStringAsFixed(2)}\n';
+        text += '顔領域のY範囲: ys=${ys.toStringAsFixed(2)}, ye=${ye.toStringAsFixed(2)}\n';
+        setState(() {
+          xy_face=[double.parse(xs.toStringAsFixed(2)),
+            double.parse(ys.toStringAsFixed(2)),
+            double.parse(ye.toStringAsFixed(2))-double.parse(ys.toStringAsFixed(2)),
+            double.parse(xe.toStringAsFixed(2))-double.parse(xs.toStringAsFixed(2))];
+
+        });
+      }
 
       _text = text;
-      print(_text);
+      // print(_text);
     }
     _isBusy = false;
     if (mounted) {
@@ -357,10 +448,10 @@ class _SelectPageState extends State<SelectPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFFFFF98),
+      backgroundColor: Color(0xFFFAEED1),
       appBar: AppBar(
         title: Text('福笑い'),
-        backgroundColor: Color(0xFFFFFF98),
+        backgroundColor: Color(0xFFFAEED1),
       ),
       body: Center(
         child: Column(
@@ -393,8 +484,8 @@ class _SelectPageState extends State<SelectPage> {
                   ),
                   style: ElevatedButton.styleFrom(
                     fixedSize: Size(200, 100),
-                    // primary: Color(0xFF89A64B),
-                    // onPrimary: Colors.white,
+                    backgroundColor: Color(0xFFB2A59B), // ボタンの背景色
+                    foregroundColor: Colors.white,
                   ),
                   onPressed: _getImage,
                 ),
@@ -406,12 +497,12 @@ class _SelectPageState extends State<SelectPage> {
                   ),
                   style: ElevatedButton.styleFrom(
                     fixedSize: Size(200, 100),
-                    // primary: Color(0xFF89A64B),
-                    // onPrimary: Colors.white,
+                    backgroundColor: Color(0xFFB2A59B), // ボタンの背景色
+                    foregroundColor: Colors.white,
                   ),
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => GamePage(_croppedImage_nose!,_croppedImage_rightEye!,_croppedImage_leftEye!,_croppedImage_mouth!)
+                        builder: (context) => GamePage(_croppedImage_nose!,_croppedImage_rightEye!,_croppedImage_leftEye!,_croppedImage_mouth!,_processImage_face!)
                     ));
                   },
                 ),

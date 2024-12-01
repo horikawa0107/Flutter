@@ -6,8 +6,10 @@ class GamePage extends StatefulWidget {
   final ui.Image _croppedImage_rightEye;
   final ui.Image _croppedImage_leftEye;
   final ui.Image _croppedImage_mouth;
+  final ui.Image _croppedImage_face;
 
-  const GamePage(this._croppedImage_nose, this._croppedImage_rightEye, this._croppedImage_leftEye, this._croppedImage_mouth, {Key? key})
+
+  const GamePage(this._croppedImage_nose, this._croppedImage_rightEye, this._croppedImage_leftEye, this._croppedImage_mouth,this._croppedImage_face,{Key? key})
       : super(key: key);
 
   @override
@@ -41,17 +43,26 @@ class _GamePageState extends State<GamePage> {
           builder: (context, constraints) {
             return Stack(
               children: [
-                Align(
-                  alignment: Alignment.topCenter, // 背景画像を中央に配置
-                  child: Container(
-                    width: 360,
-                    height: 500,
-                    child: Image.asset(
-                      'assets/fukuwarai.png',
-                      fit: BoxFit.contain, // 画像全体を表示し、アスペクト比を維持
-                    ),
-                  ),
-                ),
+                Container(
+                  width: 300,
+                  child: widget._croppedImage_face == null
+                      ? Text('No image selected.')
+                      : CustomPaint(
+                    painter: ImagePainter(widget._croppedImage_face!),
+                    size: Size(widget._croppedImage_face!.width.toDouble(), widget._croppedImage_face!.height.toDouble()),
+                  ),),
+                // Align(
+                //   alignment: Alignment.topCenter, // 背景画像を中央に配置
+                //
+                //   child: Container(
+                //     width: 360,
+                //     height: 500,
+                //     child: Image.asset(
+                //       'assets/fukuwarai.png',
+                //       fit: BoxFit.contain, // 画像全体を表示し、アスペクト比を維持
+                //     ),
+                //   ),
+                // ),
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: Container(
@@ -160,4 +171,18 @@ class MultiImagePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
+
+class ImagePainter extends CustomPainter {
+  final ui.Image image;
+
+  ImagePainter(this.image);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    canvas.drawImage(image, Offset.zero, Paint());
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

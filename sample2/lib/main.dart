@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,7 +6,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io' as io;
-import 'dart:io';
 import "select.dart";
 
 void main() {
@@ -38,10 +36,10 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     return new Scaffold(
-        backgroundColor: Color(0xFFFFFF98),
+        backgroundColor: Color(0xFFFAEED1),
         appBar: new AppBar(
           title: new Text('福笑い'),
-          backgroundColor: Color(0xFFFFFF98),
+          backgroundColor: Color(0xFFFAEED1),
         ),
         body:Center(
           child:Column(
@@ -53,19 +51,20 @@ class _MyHomePageState extends State<MyHomePage> {
                   child:Image.asset('assets/22179350.png',fit: BoxFit.cover,),
                 ),
                 ElevatedButton(
-                  child: const Text('let\'s play',
+                  child: const Text(
+                    'let\'s play',
                     style: TextStyle(
                       fontSize: 35,
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
                     fixedSize: Size(200, 100),
-                    // primary: Color(0xFF89A64B),
-                    // onPrimary: Colors.white,
+                    backgroundColor: Color(0xFFB2A59B), // ボタンの背景色
+                    foregroundColor: Colors.white,      // テキストの色
                   ),
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => SelectPage()
+                      builder: (context) => SelectPage(),
                     ));
                   },
                 ),
