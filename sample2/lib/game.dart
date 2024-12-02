@@ -7,9 +7,16 @@ class GamePage extends StatefulWidget {
   final ui.Image _croppedImage_leftEye;
   final ui.Image _croppedImage_mouth;
   final ui.Image _croppedImage_face;
+  final List list_color;
 
 
-  const GamePage(this._croppedImage_nose, this._croppedImage_rightEye, this._croppedImage_leftEye, this._croppedImage_mouth,this._croppedImage_face,{Key? key})
+  const GamePage(this._croppedImage_nose,
+      this._croppedImage_rightEye,
+      this._croppedImage_leftEye,
+      this._croppedImage_mouth,
+      this._croppedImage_face,
+      this.list_color,
+      {Key? key})
       : super(key: key);
 
   @override
@@ -17,21 +24,95 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> {
-  Offset _image1Offset = Offset(40,650); // 鼻
-  Offset _image2Offset = Offset(125,700); // 右目
-  Offset _image3Offset = Offset(200,700); // 左目
-  Offset _image4Offset = Offset(280,700); // 口
+  Offset _image1Offset = Offset(40,600); // 鼻
+  Offset _image2Offset = Offset(125,600); // 右目
+  Offset _image3Offset = Offset(200,600); // 左目
+  Offset _image4Offset = Offset(280,600); // 口
   Offset _startDragOffset = Offset.zero;
   int? _draggingImageIndex;
+  bool _finish = false;
+  ui.Image? _displayedNoseImage;
+  ui.Image? _displayedLeftEyeImage;
+  ui.Image? _displayedRightEyeImage;
+  ui.Image? _displayedMouthImage;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeNoseImage();
+  }
+
+
+  Future<void> _initializeNoseImage() async {
+    // 最初は黒塗りの画像を表示
+
+    if (widget.list_color!=null) {
+      final obeject_nose = await _createBlackFilledImage(
+          60, 60, widget.list_color![0]);
+      final obeject_leftaEye = await _createBlackFilledImage(
+          60, 60, widget.list_color![2]);
+      final obeject_rightaEye = await _createBlackFilledImage(
+          60, 60, widget.list_color![1]);
+      final obeject_mouth = await _createBlackFilledImage(
+          60, 60, widget.list_color![3]);
+
+      setState(() {
+        _displayedNoseImage = obeject_nose;
+        _displayedLeftEyeImage =obeject_leftaEye;
+        _displayedRightEyeImage=obeject_rightaEye;
+        _displayedMouthImage=obeject_mouth;
+      });
+    }
+
+    // widget._croppedImage_nose.width, widget._croppedImage_nose.height);
+
+  }
+
+  Future<ui.Image> _createBlackFilledImage(int width, int height,Color color) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()));
+    final paint = Paint()..color = color;
+
+    canvas.drawRect(Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()), paint);
+
+    final picture = recorder.endRecording();
+    return await picture.toImage(width, height);
+  }
+
+  void _resetToOriginalNose() {
+    setState(() {
+      _displayedNoseImage = widget._croppedImage_nose;
+      _displayedLeftEyeImage=widget._croppedImage_leftEye;// 鼻画像を元に戻す
+      _displayedRightEyeImage=widget._croppedImage_rightEye;
+      _displayedMouthImage=widget._croppedImage_mouth;
+    });
+  }
+
+
+  Future<ui.Image> fillImageWithColor(ui.Image image, Color color) async {
+    final pictureRecorder = ui.PictureRecorder();
+    final canvas = Canvas(pictureRecorder);
+
+    // 塗りつぶし
+    final paint = Paint()..color = color;
+    canvas.drawRect(
+      Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble()),
+      paint,
+    );
+
+    // 新しい画像を生成
+    final picture = pictureRecorder.endRecording();
+    return await picture.toImage(image.width, image.height);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFFFFFF98),
+      backgroundColor: Color(0xFFFAEED1),
       appBar: AppBar(
-        backgroundColor: Color(0xFFFFFF98),
+        backgroundColor: Color(0xFFFAEED1),
         title: Text(
-          "入室",
+          "福笑い",
           style: TextStyle(
             fontSize: 25,
             // color: Colors.white,
@@ -43,32 +124,24 @@ class _GamePageState extends State<GamePage> {
           builder: (context, constraints) {
             return Stack(
               children: [
-                Container(
-                  width: 300,
-                  child: widget._croppedImage_face == null
-                      ? Text('No image selected.')
-                      : CustomPaint(
-                    painter: ImagePainter(widget._croppedImage_face!),
-                    size: Size(widget._croppedImage_face!.width.toDouble(), widget._croppedImage_face!.height.toDouble()),
-                  ),),
-                // Align(
-                //   alignment: Alignment.topCenter, // 背景画像を中央に配置
-                //
-                //   child: Container(
-                //     width: 360,
-                //     height: 500,
-                //     child: Image.asset(
-                //       'assets/fukuwarai.png',
-                //       fit: BoxFit.contain, // 画像全体を表示し、アスペクト比を維持
-                //     ),
-                //   ),
-                // ),
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Container(
+                    margin: const EdgeInsets.only(left: 20), // 画面下部からの余白
+                    child: widget._croppedImage_face == null
+                        ? Text('No image selected.')
+                        : CustomPaint(
+                      painter: ImagePainter(widget._croppedImage_face!),
+                      // size: Size(widget._croppedImage_face!.width.toDouble(), widget._croppedImage_face!.height.toDouble()),
+                    ),),
+                ),
+
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: Container(
                     width: 370, // 四角形の幅
-                    height: 150, // 四角形の高さ
-                    margin: const EdgeInsets.only(bottom: 20), // 画面下部からの余白
+                    height: 100, // 四角形の高さ
+                    margin: const EdgeInsets.only(bottom: 110), // 画面下部からの余白
                     color: Colors.white, // 四角形の色
                   ),
                 ),
@@ -124,10 +197,10 @@ class _GamePageState extends State<GamePage> {
                   },
                   child: CustomPaint(
                     painter: MultiImagePainter(
-                      widget._croppedImage_nose,
-                      widget._croppedImage_rightEye,
-                      widget._croppedImage_leftEye,
-                      widget._croppedImage_mouth,
+                      _displayedNoseImage!,
+                      _displayedRightEyeImage!,
+                      _displayedLeftEyeImage!,
+                      _displayedMouthImage!,
                       _image1Offset,
                       _image2Offset,
                       _image3Offset,
@@ -137,6 +210,32 @@ class _GamePageState extends State<GamePage> {
                       width: constraints.maxWidth,
                       height: constraints.maxHeight,
                     ),
+                  ),
+                ),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  // 背景画像を中央に配置
+                  child: ElevatedButton(
+                    child: const Text(
+                      '終了!',
+                      style: TextStyle(
+                        fontSize: 35,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      fixedSize: Size(200, 100),
+                      backgroundColor: Color(0xFFB2A59B),
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () {
+                      print("pushed");
+                      _resetToOriginalNose();
+                      // 状態を更新して再描画
+                      // setState(() {
+                      //   this._currentNoseImage = widget._croppedImage_nose;  // 注意: widgetのプロパティがfinalではない場合のみ変更可能
+                      // });
+                    },
+
                   ),
                 ),
 
@@ -180,7 +279,19 @@ class ImagePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    double scale = 0.8; // 50%のサイズに縮小する場合
+
+    // Canvasを縮小
+    canvas.save();
+    canvas.scale(scale, scale);
+
+    // 縮小後の画像を描画
     canvas.drawImage(image, Offset.zero, Paint());
+
+    // Canvasの状態を元に戻す
+    // canvas.scale(1, 1);
+
+    canvas.restore();
   }
 
   @override

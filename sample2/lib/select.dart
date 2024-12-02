@@ -54,11 +54,11 @@ class _SelectPageState extends State<SelectPage> {
   List<double> xy_leftEye = [];
   List<double> xy_mouth = [];
   List<double> xy_face = [];
-  Color? face_color;
   List<Rect> list_rect=[];
+  List<Color> list_color=[];
 
 
-  Future<void> getPixelColor(ui.Image image, int x, int y) async {
+  Future<void> getPixelColor(ui.Image image,List<List<int>> list_xy) async {
     try {
       // 画像のピクセルデータを取得
       final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
@@ -69,18 +69,29 @@ class _SelectPageState extends State<SelectPage> {
       final int width = image.width;
 
       // 座標 (x, y) のピクセルの位置を計算
-      final int pixelIndex = (y * width + x) * 4; // RGBA各1byteなので*4
+      list_xy.asMap().forEach((i, xy) {
+        int x = xy[0];
+        int y = xy[1];
+        print('Index: $i, x: $x, y: $y');
 
-      // 各色成分を抽出
-      final int red = byteData.getUint8(pixelIndex);
-      final int green = byteData.getUint8(pixelIndex + 1);
-      final int blue = byteData.getUint8(pixelIndex + 2);
-      final int alpha = byteData.getUint8(pixelIndex + 3);
+        final int pixelIndex = (y * width + x) * 4; // RGBA各1byteなので*4
+
+        // 各色成分を抽出
+        final int red = byteData.getUint8(pixelIndex);
+        final int green = byteData.getUint8(pixelIndex + 1);
+        final int blue = byteData.getUint8(pixelIndex + 2);
+        final int alpha = byteData.getUint8(pixelIndex + 3);
+        list_color.add(Color.fromARGB(alpha, red, green, blue));
+        // setState(() {
+        //   print('iは${i}');
+        //   list_color[i+1]=Color.fromARGB(alpha, red, green, blue);
+        // });
+
+      });
+      print(list_color);
 
       // Color型に変換して返す
-      setState(() {
-        face_color=Color.fromARGB(alpha, red, green, blue);
-      });
+
     } catch (e) {
       print("Error extracting pixel color: $e");
       return null;
@@ -187,7 +198,12 @@ class _SelectPageState extends State<SelectPage> {
   Future<void> _loadImage2() async {
     if (_uiImage == null) return;
     print("_loadImage2 start");
-    getPixelColor(_uiImage!,xy_nose[0].toInt()+50,xy_nose[1].toInt()+40);
+    List<List<int>> list_xy=[[xy_nose[0].toInt()+50,xy_nose[1].toInt()+40],
+                             [xy_rightEye[0].toInt()+50,xy_rightEye[1].toInt()+40],
+    [xy_leftEye[0].toInt()+50,xy_leftEye[1].toInt()+40],
+    [xy_mouth[0].toInt()+50,xy_mouth[1].toInt()+40]];
+    getPixelColor(_uiImage!,list_xy);
+    // getPixelColor(_uiImage!,xy_nose[0].toInt()+50,xy_nose[1].toInt()+40);
 
 
     // 切り抜き範囲
@@ -207,8 +223,8 @@ class _SelectPageState extends State<SelectPage> {
     final cropped_righEye = await cropImage(_uiImage!, cropRect_rightEye);
     final cropped_leftEye = await cropImage(_uiImage!, cropRect_leftEye);
     final cropped_mouth = await cropImage(_uiImage!, cropRect_mouth);
-    if (face_color!=null || list_rect!=null ){
-    final processface = await fillRectOnImage(_uiImage!, list_rect, face_color!);
+    if (list_color[0]!=null || list_rect!=null ){
+    final processface = await fillRectOnImage(_uiImage!, list_rect, list_color[0]!);
     print(processface);
     setState(() {
       _processImage_face=processface;
@@ -288,7 +304,6 @@ class _SelectPageState extends State<SelectPage> {
 
     for (final face in faces) {
       text += 'smilingProbabilityの値: ${(face.smilingProbability! * 100).floor()}%\n\n';
-      final nose = face.contours[FaceContourType.noseBottom];
       final leftEyeContour = face.contours[FaceContourType.leftEye];
       final rightEyeContour = face.contours[FaceContourType.rightEye];
       final noseBridge = face.contours[FaceContourType.noseBridge];
@@ -461,10 +476,10 @@ class _SelectPageState extends State<SelectPage> {
               padding: const EdgeInsets.all(8.0),
               child:
               Container(
-                width: 200.0,
-                height: 200.0,
+                width: 400.0,
+                height: 400.0,
                 decoration: BoxDecoration(border: Border.all(
-                  // color: Color(0xFF89A64B),
+                  color: Color(0xFFB2A59B),
                   width: 8.0,
                 ),
                 ),
@@ -477,7 +492,7 @@ class _SelectPageState extends State<SelectPage> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 ElevatedButton(
-                  child: const Text('写真選択',
+                  child: const Text('顔を選ぶ',
                     style: TextStyle(
                       fontSize: 35,
                     ),
@@ -490,7 +505,7 @@ class _SelectPageState extends State<SelectPage> {
                   onPressed: _getImage,
                 ),
                 ElevatedButton(
-                  child: const Text('start!',
+                  child: const Text('スタート',
                     style: TextStyle(
                       fontSize: 35,
                     ),
@@ -502,7 +517,7 @@ class _SelectPageState extends State<SelectPage> {
                   ),
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => GamePage(_croppedImage_nose!,_croppedImage_rightEye!,_croppedImage_leftEye!,_croppedImage_mouth!,_processImage_face!)
+                        builder: (context) => GamePage(_croppedImage_nose!,_croppedImage_rightEye!,_croppedImage_leftEye!,_croppedImage_mouth!,_processImage_face!,list_color)
                     ));
                   },
                 ),
