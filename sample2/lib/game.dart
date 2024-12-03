@@ -24,10 +24,10 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> {
-  Offset _image1Offset = Offset(40,600); // 鼻
-  Offset _image2Offset = Offset(125,600); // 右目
-  Offset _image3Offset = Offset(200,600); // 左目
-  Offset _image4Offset = Offset(280,600); // 口
+  Offset _image1Offset = Offset(40,590); // 鼻
+  Offset _image2Offset = Offset(125,590); // 右目
+  Offset _image3Offset = Offset(200,590); // 左目
+  Offset _image4Offset = Offset(280,590); // 口
   Offset _startDragOffset = Offset.zero;
   int? _draggingImageIndex;
   bool _finish = false;
@@ -141,7 +141,7 @@ class _GamePageState extends State<GamePage> {
                   child: Container(
                     width: 370, // 四角形の幅
                     height: 100, // 四角形の高さ
-                    margin: const EdgeInsets.only(bottom: 110), // 画面下部からの余白
+                    margin: const EdgeInsets.only(bottom: 120), // 画面下部からの余白
                     color: Colors.white, // 四角形の色
                   ),
                 ),
@@ -212,32 +212,47 @@ class _GamePageState extends State<GamePage> {
                     ),
                   ),
                 ),
+            Padding(
+            padding: const EdgeInsets.only(bottom: 10.0), // 下から10px分のスペースを追加
+            child:
                 Align(
                   alignment: Alignment.bottomCenter,
                   // 背景画像を中央に配置
                   child: ElevatedButton(
-                    child: const Text(
-                      '終了!',
+                    child: _finish?
+                    const Text(
+                      'ゲーム終了!',
                       style: TextStyle(
                         fontSize: 35,
                       ),
-                    ),
+                    )
+                    :
+                        const Text(
+            '目隠しを撮る',
+            style: TextStyle(
+            fontSize: 35,
+            ),
+            ),
                     style: ElevatedButton.styleFrom(
                       fixedSize: Size(200, 100),
                       backgroundColor: Color(0xFFB2A59B),
                       foregroundColor: Colors.white,
                     ),
                     onPressed: () {
+                      if (_finish==false){
                       print("pushed");
                       _resetToOriginalNose();
                       // 状態を更新して再描画
-                      // setState(() {
-                      //   this._currentNoseImage = widget._croppedImage_nose;  // 注意: widgetのプロパティがfinalではない場合のみ変更可能
-                      // });
+                      setState(() {
+                        _finish=true;
+                      });}
+                      else{
+                        Navigator.of(context).pop();
+                      }
                     },
-
                   ),
                 ),
+            )
 
               ],
             );

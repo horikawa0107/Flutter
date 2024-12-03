@@ -521,13 +521,19 @@ class _SelectPageState extends State<SelectPage> {
                     ));
                   },
                 ),
-
-                FloatingActionButton(
-                  onPressed: _loadImage2,
-                  tooltip: 'crop image From assets',
-                  child: Icon(Icons.android),
+                ElevatedButton(
+                  child: const Text('決定',
+                    style: TextStyle(
+                      fontSize: 35,
+                    ),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    fixedSize: Size(200, 100),
+                    backgroundColor: Color(0xFFB2A59B), // ボタンの背景色
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: _loadImage2
                 ),
-
               ],
             )
           ],
