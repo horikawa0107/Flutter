@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui' as ui;
 
 class GamePage extends StatefulWidget {
+  final ui.Image _uiImage;
   final ui.Image _croppedImage_nose;
   final ui.Image _croppedImage_rightEye;
   final ui.Image _croppedImage_leftEye;
@@ -10,7 +11,8 @@ class GamePage extends StatefulWidget {
   final List list_color;
 
 
-  const GamePage(this._croppedImage_nose,
+  const GamePage(this._uiImage,
+      this._croppedImage_nose,
       this._croppedImage_rightEye,
       this._croppedImage_leftEye,
       this._croppedImage_mouth,
@@ -195,7 +197,11 @@ class _GamePageState extends State<GamePage> {
                   onPanEnd: (details) {
                     _draggingImageIndex = null; // ドラッグ終了時にリセット
                   },
-                  child: CustomPaint(
+                  child: (_displayedNoseImage != null &&
+                      _displayedRightEyeImage != null &&
+                      _displayedLeftEyeImage != null &&
+                      _displayedMouthImage != null)
+                      ? CustomPaint(
                     painter: MultiImagePainter(
                       _displayedNoseImage!,
                       _displayedRightEyeImage!,
@@ -210,7 +216,8 @@ class _GamePageState extends State<GamePage> {
                       width: constraints.maxWidth,
                       height: constraints.maxHeight,
                     ),
-                  ),
+                  )
+                : CircularProgressIndicator(), // 画像がロードされていない場合のプレースホルダー
                 ),
             Padding(
             padding: const EdgeInsets.only(bottom: 10.0), // 下から10px分のスペースを追加

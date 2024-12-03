@@ -1,13 +1,10 @@
 import 'dart:io';
-import 'package:crop_your_image/crop_your_image.dart';
+import 'package:sample2/add_function.dart';
 import 'dart:async' show Future;
 import 'dart:ui' as ui;
 import 'dart:async';
 import 'dart:typed_data';
 import "game.dart";
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -56,6 +53,7 @@ class _SelectPageState extends State<SelectPage> {
   List<double> xy_face = [];
   List<Rect> list_rect=[];
   List<Color> list_color=[];
+  ui.Image? _black;
 
 
   Future<void> getPixelColor(ui.Image image,List<List<int>> list_xy) async {
@@ -67,6 +65,8 @@ class _SelectPageState extends State<SelectPage> {
 
       // 画像の幅を取得
       final int width = image.width;
+      list_color.clear();
+
 
       // 座標 (x, y) のピクセルの位置を計算
       list_xy.asMap().forEach((i, xy) {
@@ -81,6 +81,7 @@ class _SelectPageState extends State<SelectPage> {
         final int green = byteData.getUint8(pixelIndex + 1);
         final int blue = byteData.getUint8(pixelIndex + 2);
         final int alpha = byteData.getUint8(pixelIndex + 3);
+
         list_color.add(Color.fromARGB(alpha, red, green, blue));
         // setState(() {
         //   print('iは${i}');
@@ -193,11 +194,28 @@ class _SelectPageState extends State<SelectPage> {
     }
   }
 
+  Future<ui.Image> _createBlackFilledImage(int width, int height,Color color) async {
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder, Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()));
+    final paint = Paint()..color = color;
+
+    canvas.drawRect(Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()), paint);
+
+    final picture = recorder.endRecording();
+    return await picture.toImage(width, height);
+  }
+
 
 
   Future<void> _loadImage2() async {
-    if (_uiImage == null) return;
+    if (_uiImage == null) {
+      print("画像がロードされていません");
+      return;
+    }
+
     print("_loadImage2 start");
+    ui.Image black=await _createBlackFilledImage(480,650,Colors.black);
+
     List<List<int>> list_xy=[[xy_nose[0].toInt()+50,xy_nose[1].toInt()+40],
                              [xy_rightEye[0].toInt()+50,xy_rightEye[1].toInt()+40],
     [xy_leftEye[0].toInt()+50,xy_leftEye[1].toInt()+40],
@@ -207,39 +225,48 @@ class _SelectPageState extends State<SelectPage> {
 
 
     // 切り抜き範囲
-    final cropRect_nose = Rect.fromLTWH(xy_nose[0]!, xy_nose[1]!, xy_nose[3]!, xy_nose[2]!);
-    final cropRect_rightEye = Rect.fromLTWH(xy_rightEye[0]!, xy_rightEye[1]!, xy_rightEye[3]!, xy_rightEye[2]!);
-    final cropRect_leftEye = Rect.fromLTWH(xy_leftEye[0]!, xy_leftEye[1]!, xy_leftEye[3]!, xy_leftEye[2]!);
-    final cropRect_mouth = Rect.fromLTWH(xy_mouth[0]!, xy_mouth[1]!, xy_mouth[3]!, xy_mouth[2]!);
-    setState(() {
-      list_rect=[cropRect_nose,cropRect_rightEye,cropRect_leftEye,cropRect_mouth];
-    });
-    // final cropRect_face = Rect.fromLTWH(xy_face[0]!, xy_face[1]!, xy_face[3]!, xy_face[2]!);
+    if (xy_nose.isNotEmpty && xy_nose.length >= 4) {
+      final cropRect_nose = Rect.fromLTWH(
+          xy_nose[0]!, xy_nose[1]!, xy_nose[3]!, xy_nose[2]!);
+      final cropRect_rightEye = Rect.fromLTWH(
+          xy_rightEye[0]!, xy_rightEye[1]!, xy_rightEye[3]!, xy_rightEye[2]!);
+      final cropRect_leftEye = Rect.fromLTWH(
+          xy_leftEye[0]!, xy_leftEye[1]!, xy_leftEye[3]!, xy_leftEye[2]!);
+      final cropRect_mouth = Rect.fromLTWH(
+          xy_mouth[0]!, xy_mouth[1]!, xy_mouth[3]!, xy_mouth[2]!);
+      setState(() {
+        list_rect =
+        [cropRect_nose, cropRect_rightEye, cropRect_leftEye, cropRect_mouth];
+      });
+      // final cropRect_face = Rect.fromLTWH(xy_face[0]!, xy_face[1]!, xy_face[3]!, xy_face[2]!);
 
-    print(cropRect_nose);
+      print(cropRect_nose);
 
-    // 画像を切り抜き
-    final cropped_nose = await cropImage(_uiImage!, cropRect_nose);
-    final cropped_righEye = await cropImage(_uiImage!, cropRect_rightEye);
-    final cropped_leftEye = await cropImage(_uiImage!, cropRect_leftEye);
-    final cropped_mouth = await cropImage(_uiImage!, cropRect_mouth);
-    if (list_color[0]!=null || list_rect!=null ){
-    final processface = await fillRectOnImage(_uiImage!, list_rect, list_color[0]!);
-    print(processface);
-    setState(() {
-      _processImage_face=processface;
-    });
+      // 画像を切り抜き
+      final cropped_nose = await cropImage(_uiImage!, cropRect_nose);
+      final cropped_righEye = await cropImage(_uiImage!, cropRect_rightEye);
+      final cropped_leftEye = await cropImage(_uiImage!, cropRect_leftEye);
+      final cropped_mouth = await cropImage(_uiImage!, cropRect_mouth);
+      if (list_color.isNotEmpty && list_rect.isNotEmpty) {
+        final processface = await fillRectOnImage(
+            _uiImage!, list_rect, list_color[0]!);
+        print(processface);
+        setState(() {
+          _processImage_face = processface;
+        });
+      }
+      print("cropped ok");
+
+      // 状態を更新
+      setState(() {
+        _black=black;
+        _croppedImage_nose = cropped_nose;
+        _croppedImage_rightEye = cropped_righEye;
+        _croppedImage_leftEye = cropped_leftEye;
+        _croppedImage_mouth = cropped_mouth;
+      });
+      print("setStates ok");
     }
-    print("cropped ok");
-
-    // 状態を更新
-    setState(() {
-      _croppedImage_nose = cropped_nose;
-      _croppedImage_rightEye = cropped_righEye;
-      _croppedImage_leftEye = cropped_leftEye;
-      _croppedImage_mouth=cropped_mouth;
-    });
-    print("setStates ok");
   }
 
   Future<ui.Image> cropImage(
@@ -303,7 +330,7 @@ class _SelectPageState extends State<SelectPage> {
     String text = '検出された顔の数: ${faces.length}\n\n';
 
     for (final face in faces) {
-      text += 'smilingProbabilityの値: ${(face.smilingProbability! * 100).floor()}%\n\n';
+      // text += 'smilingProbabilityの値: ${(face.smilingProbability! * 100).floor()}%\n\n';
       final leftEyeContour = face.contours[FaceContourType.leftEye];
       final rightEyeContour = face.contours[FaceContourType.rightEye];
       final noseBridge = face.contours[FaceContourType.noseBridge];
@@ -498,7 +525,7 @@ class _SelectPageState extends State<SelectPage> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    fixedSize: Size(200, 100),
+                    fixedSize: Size(200, 50),
                     backgroundColor: Color(0xFFB2A59B), // ボタンの背景色
                     foregroundColor: Colors.white,
                   ),
@@ -511,13 +538,13 @@ class _SelectPageState extends State<SelectPage> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    fixedSize: Size(200, 100),
+                    fixedSize: Size(200, 50),
                     backgroundColor: Color(0xFFB2A59B), // ボタンの背景色
                     foregroundColor: Colors.white,
                   ),
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => GamePage(_croppedImage_nose!,_croppedImage_rightEye!,_croppedImage_leftEye!,_croppedImage_mouth!,_processImage_face!,list_color)
+                        builder: (context) => GamePage(_uiImage!,_croppedImage_nose!,_croppedImage_rightEye!,_croppedImage_leftEye!,_croppedImage_mouth!,_processImage_face!,list_color)
                     ));
                   },
                 ),
@@ -528,11 +555,43 @@ class _SelectPageState extends State<SelectPage> {
                     ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    fixedSize: Size(200, 100),
+                    fixedSize: Size(200, 50),
                     backgroundColor: Color(0xFFB2A59B), // ボタンの背景色
                     foregroundColor: Colors.white,
                   ),
                   onPressed: _loadImage2
+                ),
+                ElevatedButton(
+                    child: const Text('追加機能',
+                      style: TextStyle(
+                        fontSize: 35,
+                      ),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      fixedSize: Size(200, 50),
+                      backgroundColor: Color(0xFFB2A59B), // ボタンの背景色
+                      foregroundColor: Colors.white,
+                    ),
+                  onPressed: () {
+                      print("pushed");
+                      print(_uiImage!);
+                      print(_croppedImage_nose!);
+                      print(_croppedImage_rightEye!);
+                      print(_croppedImage_leftEye!,);
+                      print(_croppedImage_mouth!);
+                      print(_processImage_face!);
+                      print(list_color);
+                      Navigator.push(context, MaterialPageRoute(
+                        builder: (context) => AddFuncPage(_uiImage!,
+                            _croppedImage_nose!,
+                            _croppedImage_rightEye!,
+                            _croppedImage_leftEye!,
+                            _croppedImage_mouth!,
+                            _processImage_face!,
+                            list_color!,
+                            _black!)
+                    ));
+                  },
                 ),
               ],
             )

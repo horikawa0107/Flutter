@@ -9,6 +9,7 @@ class AddFuncPage extends StatefulWidget {
   final ui.Image _croppedImage_mouth;
   final ui.Image _croppedImage_face;
   final List list_color;
+  final ui.Image _black;
 
 
   const AddFuncPage(this._uiImage,
@@ -18,6 +19,7 @@ class AddFuncPage extends StatefulWidget {
       this._croppedImage_mouth,
       this._croppedImage_face,
       this.list_color,
+      this._black,
       {Key? key})
       : super(key: key);
 
@@ -43,23 +45,20 @@ class _AddFuncPageState extends State<AddFuncPage> {
   void initState() {
     super.initState();
 
-    Future.delayed(Duration(seconds: 1), () {
+    Future.delayed(Duration(seconds: 2), () {
       _initializeNoseImage();
-      setState(() async{
-        ui.Image black=await _createBlackFilledImage(480,550,Colors.black);
-
-        _displayedImage_face=black;
+      setState(() {
+        _displayedImage_face=widget._black;
       });
-
     });
-
+    _initializeNoseImage();
     // 最初の表示を設定
     setState(() {
       _displayedImage_face=widget._uiImage;
-      _displayedNoseImage = widget._uiImage;
-      _displayedLeftEyeImage = widget._uiImage; // 必要に応じて他の部分も _uiImage に
-      _displayedRightEyeImage = widget._uiImage;
-      _displayedMouthImage = widget._uiImage;
+      // _displayedNoseImage = widget._uiImage;
+      // _displayedLeftEyeImage = widget._uiImage; // 必要に応じて他の部分も _uiImage に
+      // _displayedRightEyeImage = widget._uiImage;
+      // _displayedMouthImage = widget._uiImage;
     });
 
   }
@@ -219,7 +218,11 @@ class _AddFuncPageState extends State<AddFuncPage> {
                   onPanEnd: (details) {
                     _draggingImageIndex = null; // ドラッグ終了時にリセット
                   },
-                  child: CustomPaint(
+                  child: (_displayedNoseImage != null &&
+                      _displayedRightEyeImage != null &&
+                      _displayedLeftEyeImage != null &&
+                      _displayedMouthImage != null)
+                      ? CustomPaint(
                     painter: MultiImagePainter(
                       _displayedNoseImage!,
                       _displayedRightEyeImage!,
@@ -234,8 +237,9 @@ class _AddFuncPageState extends State<AddFuncPage> {
                       width: constraints.maxWidth,
                       height: constraints.maxHeight,
                     ),
-                  ),
-                ),
+            )
+                : CircularProgressIndicator(), // 画像がロードされていない場合のプレースホルダー
+            ),
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10.0), // 下から10px分のスペースを追加
                   child:
@@ -269,6 +273,7 @@ class _AddFuncPageState extends State<AddFuncPage> {
                           // 状態を更新して再描画
                           setState(() {
                             _finish=true;
+                            _displayedImage_face=widget._croppedImage_face;
                           });}
                         else{
                           Navigator.of(context).pop();
