@@ -156,7 +156,7 @@ class _SelectPageState extends State<SelectPage> {
     final paint = Paint()..color = fillColor;
 
     for (Rect rect in list_rect) {
-      Rect new_rect= Rect.fromLTWH(rect.left-5, rect.top-5, rect.width+10, rect.height+8);
+      Rect new_rect= Rect.fromLTWH(rect.left-5, rect.top-10, rect.width+20, rect.height+20);
       canvas.drawRect(new_rect, paint);
     }
 
@@ -214,7 +214,7 @@ class _SelectPageState extends State<SelectPage> {
     }
 
     print("_loadImage2 start");
-    ui.Image black=await _createBlackFilledImage(480,650,Colors.black);
+    ui.Image black=await _createBlackFilledImage(3100,4250,Colors.black);
 
     List<List<int>> list_xy=[[xy_nose[0].toInt()+50,xy_nose[1].toInt()+40],
                              [xy_rightEye[0].toInt()+50,xy_rightEye[1].toInt()+40],
@@ -515,86 +515,138 @@ class _SelectPageState extends State<SelectPage> {
                     : _image2,
               ),
             ),
+
             Column(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.start, // 必要に応じて調整
               children: [
-                ElevatedButton(
-                  child: const Text('顔を選ぶ',
-                    style: TextStyle(
-                      fontSize: 35,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    fixedSize: Size(200, 50),
-                    backgroundColor: Color(0xFFB2A59B), // ボタンの背景色
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: _getImage,
-                ),
-                ElevatedButton(
-                  child: const Text('スタート',
-                    style: TextStyle(
-                      fontSize: 35,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    fixedSize: Size(200, 50),
-                    backgroundColor: Color(0xFFB2A59B), // ボタンの背景色
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => GamePage(_uiImage!,_croppedImage_nose!,_croppedImage_rightEye!,_croppedImage_leftEye!,_croppedImage_mouth!,_processImage_face!,list_color)
-                    ));
-                  },
-                ),
-                ElevatedButton(
-                  child: const Text('決定',
-                    style: TextStyle(
-                      fontSize: 35,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    fixedSize: Size(200, 50),
-                    backgroundColor: Color(0xFFB2A59B), // ボタンの背景色
-                    foregroundColor: Colors.white,
-                  ),
-                  onPressed: _loadImage2
-                ),
-                ElevatedButton(
-                    child: const Text('追加機能',
-                      style: TextStyle(
-                        fontSize: 35,
-                      ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 20.0), // 下に隙間を設定
+                  child: ElevatedButton(
+                    child: const Text(
+                      '顔を選ぶ',
+                      style: TextStyle(fontSize: 35),
                     ),
                     style: ElevatedButton.styleFrom(
                       fixedSize: Size(200, 50),
-                      backgroundColor: Color(0xFFB2A59B), // ボタンの背景色
+                      backgroundColor: Color(0xFFB2A59B),
                       foregroundColor: Colors.white,
                     ),
+                    onPressed: _getImage,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 20.0), // 下に隙間を設定
+                  child: ElevatedButton(
+                    child: const Text(
+                      '決定',
+                      style: TextStyle(fontSize: 35),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      fixedSize: Size(200, 50),
+                      backgroundColor: Color(0xFFB2A59B),
+                      foregroundColor: Colors.white,
+                    ),
+                    onPressed: () {
+                      if ( _image2 !=null){
+                        _loadImage2();
+                        }
+                      else{
+                        AlertDialog(
+                          title: Text('画像を選択してください。'),
+                          // content: Text('こうかいしませんね？'),
+                          actions: <Widget>[
+                            GestureDetector(
+                              child: Text('ok'),
+                              onTap: () {},
+                            )
+                          ],
+                        );
+                      }
+                    },
+                  ),
+                ),
+                ElevatedButton(
+                  child: const Text(
+                    'スタート',
+                    style: TextStyle(fontSize: 35),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    fixedSize: Size(200, 50),
+                    backgroundColor: Color(0xFFB2A59B),
+                    foregroundColor: Colors.white,
+                  ),
                   onPressed: () {
+                    if ( _uiImage !=null||
+                        _croppedImage_nose !=null||
+                        _croppedImage_rightEye !=null||
+                        _croppedImage_mouth! !=null||
+                        _croppedImage_leftEye !=null||
+                        _processImage_face !=null||
+                        list_color !=null){
                       print("pushed");
-                      print(_uiImage!);
-                      print(_croppedImage_nose!);
-                      print(_croppedImage_rightEye!);
-                      print(_croppedImage_leftEye!,);
-                      print(_croppedImage_mouth!);
-                      print(_processImage_face!);
-                      print(list_color);
-                      Navigator.push(context, MaterialPageRoute(
-                        builder: (context) => AddFuncPage(_uiImage!,
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => AddFuncPage(
+                            _uiImage!,
                             _croppedImage_nose!,
                             _croppedImage_rightEye!,
                             _croppedImage_leftEye!,
                             _croppedImage_mouth!,
                             _processImage_face!,
                             list_color!,
-                            _black!)
-                    ));
+                            _black!,
+                          ),
+                        ),
+                      );
+                    }
+                    else if (_image2 !=null){
+                      AlertDialog(
+                        title: Text('画像を選択してください。'),
+                        // content: Text('こうかいしませんね？'),
+                        actions: <Widget>[
+                          GestureDetector(
+                            child: Text('ok'),
+                            onTap: () {},
+                          )
+                        ],
+                      );
+                    }
+                    else{
+                      // AlertDialog(
+                      //   title: Text('少しお待ちください。'),
+                      //   // content: Text('こうかいしませんね？'),
+                      //   actions: <Widget>[
+                      //     GestureDetector(
+                      //       child: Text('ok'),
+                      //       onTap: () {},
+                      //     )
+                      //   ],
+                      // );
+                    }
                   },
+
                 ),
               ],
             )
+            //     // ElevatedButton(
+            //     //   child: const Text('スタート',
+            //     //     style: TextStyle(
+            //     //       fontSize: 35,
+            //     //     ),
+            //     //   ),
+            //     //   style: ElevatedButton.styleFrom(
+            //     //     fixedSize: Size(200, 50),
+            //     //     backgroundColor: Color(0xFFB2A59B), // ボタンの背景色
+            //     //     foregroundColor: Colors.white,
+            //     //   ),
+            //     //   onPressed: () {
+            //     //     Navigator.push(context, MaterialPageRoute(
+            //     //         builder: (context) => GamePage(_uiImage!,_croppedImage_nose!,_croppedImage_rightEye!,_croppedImage_leftEye!,_croppedImage_mouth!,_processImage_face!,list_color)
+            //     //     ));
+            //     //   },
+            //     // ),
+
           ],
         ),
       ),

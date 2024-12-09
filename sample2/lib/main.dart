@@ -32,6 +32,8 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => new _MyHomePageState();
 }
 class _MyHomePageState extends State<MyHomePage> {
+  List<String> game_name=["福笑い","パズルゲーム"];
+  int n=0;
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,7 +49,7 @@ class _MyHomePageState extends State<MyHomePage> {
             child: Padding(
               padding: const EdgeInsets.only(top: 20.0), // 上からの余白
               child: Text(
-                '福笑い',
+                this.game_name[n],
                 style: TextStyle(
                   fontSize: 45,
                     color: Color(0xFFB2A59B),
@@ -55,6 +57,48 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
             ),
+          ),
+          Align(
+            alignment: Alignment.topLeft,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 20.0), // 上からの余白
+              child:IconButton(
+                icon: const Icon(Icons.arrow_left),
+                onPressed: () {
+                  print(n);
+                  setState(() {
+                    if (n==0){
+                      n=1;
+                    }else{
+                      n=0;
+                    }
+                  });
+                },
+                iconSize: 48.0,
+                color: Color(0xFFB2A59B),
+              ),
+            ),
+          ),
+          Align(
+            alignment: Alignment.topRight,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 20.0), // 上からの余白
+               child:IconButton(
+                icon: const Icon(Icons.arrow_right),
+                onPressed: () {
+                  print(n);
+                  setState(() {
+                    if (n==0){
+                      n=1;
+                    }else{
+                      n=0;
+                    }
+                  });
+                },
+                 iconSize: 48.0,
+              color: Color(0xFFB2A59B),
+            ),
+          ),
           ),
           Center(
             child: Column(

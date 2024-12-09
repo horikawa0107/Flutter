@@ -26,10 +26,10 @@ class GamePage extends StatefulWidget {
 }
 
 class _GamePageState extends State<GamePage> {
-  Offset _image1Offset = Offset(40,590); // 鼻
-  Offset _image2Offset = Offset(125,590); // 右目
-  Offset _image3Offset = Offset(200,590); // 左目
-  Offset _image4Offset = Offset(280,590); // 口
+  Offset _image1Offset = Offset(40,490); // 鼻
+  Offset _image2Offset = Offset(125,490); // 右目
+  Offset _image3Offset = Offset(200,490); // 左目
+  Offset _image4Offset = Offset(280,490); // 口
   Offset _startDragOffset = Offset.zero;
   int? _draggingImageIndex;
   bool _finish = false;
@@ -37,11 +37,52 @@ class _GamePageState extends State<GamePage> {
   ui.Image? _displayedLeftEyeImage;
   ui.Image? _displayedRightEyeImage;
   ui.Image? _displayedMouthImage;
-
+  ui.Image? _resizedNoseImage;
+  ui.Image? _resizedrightEyeImage;
+  ui.Image? _resizedleftEyeImage;
+  ui.Image? _resizedMouthImage;
   @override
   void initState() {
     super.initState();
     _initializeNoseImage();
+    _resizeNoseImage();
+  }
+
+  Future<void> _resizeNoseImage() async {
+    final resizedNoseImage = await resizeImage(widget._croppedImage_nose, 0.1);
+    final resizedrightEyeImage = await resizeImage(widget._croppedImage_rightEye, 0.1);
+    final resizedleftEyeImage = await resizeImage(widget._croppedImage_leftEye, 0.1);
+    final resizedMouthImage = await resizeImage(widget._croppedImage_mouth, 0.1);
+
+    setState(() {
+      _resizedNoseImage=resizedNoseImage;
+      _resizedMouthImage=resizedMouthImage;
+      _resizedrightEyeImage=resizedrightEyeImage;
+      _resizedleftEyeImage=resizedleftEyeImage;
+    });
+
+  }
+  Future<ui.Image> resizeImage(ui.Image image, double scale) async {
+    // 元の画像サイズを取得
+    final int newWidth = (image.width * scale).toInt();
+    final int newHeight = (image.height * scale).toInt();
+
+    // PictureRecorderとCanvasを使って新しい画像を描画
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder);
+
+    // 画像を指定したスケールで描画
+    final paint = Paint();
+    final srcRect = Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
+    final dstRect = Rect.fromLTWH(0, 0, newWidth.toDouble(), newHeight.toDouble());
+
+    canvas.drawImageRect(image, srcRect, dstRect, paint);
+
+    // PictureRecorderから画像を生成
+    final picture = recorder.endRecording();
+    final newImage = await picture.toImage(newWidth, newHeight);
+
+    return newImage;
   }
 
 
@@ -83,10 +124,10 @@ class _GamePageState extends State<GamePage> {
 
   void _resetToOriginalNose() {
     setState(() {
-      _displayedNoseImage = widget._croppedImage_nose;
-      _displayedLeftEyeImage=widget._croppedImage_leftEye;// 鼻画像を元に戻す
-      _displayedRightEyeImage=widget._croppedImage_rightEye;
-      _displayedMouthImage=widget._croppedImage_mouth;
+      _displayedNoseImage = this._resizedNoseImage;
+      _displayedLeftEyeImage=this._resizedleftEyeImage;// 鼻画像を元に戻す
+      _displayedRightEyeImage=this._resizedrightEyeImage;
+      _displayedMouthImage=this._resizedMouthImage;
     });
   }
 
@@ -151,20 +192,25 @@ class _GamePageState extends State<GamePage> {
                 GestureDetector(
                   onPanStart: (details) {
                     final image_nose_Center = _image1Offset + Offset(
-                      widget._croppedImage_nose.width / 2,
-                      widget._croppedImage_nose.height / 2,
+                      10,
+                      10,
+                      // widget._croppedImage_nose.width / 2,
+                      // widget._croppedImage_nose.height / 2,
                     );
                     final image_rightEye_Center = _image2Offset + Offset(
-                      widget._croppedImage_rightEye.width / 2,
-                      widget._croppedImage_rightEye.height / 2,
+                      10,10,
+                      // widget._croppedImage_rightEye.width / 2,
+                      // widget._croppedImage_rightEye.height / 2,
                     );
                     final image_leftEye_Center = _image3Offset + Offset(
-                      widget._croppedImage_leftEye.width / 2,
-                      widget._croppedImage_leftEye.height / 2,
+                      10,10
+                      // widget._croppedImage_leftEye.width / 2,
+                      // widget._croppedImage_leftEye.height / 2,
                     );
                     final image_mouth_Center = _image4Offset + Offset(
-                      widget._croppedImage_mouth.width / 2,
-                      widget._croppedImage_mouth.height / 2,
+                      10,10
+                      // widget._croppedImage_mouth.width / 2,
+                      // widget._croppedImage_mouth.height / 2,
                     );
 
                     if ((details.localPosition - image_nose_Center).distance < 50) {
@@ -284,10 +330,18 @@ class MultiImagePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    // double scale = 0.15; // 50%のサイズに縮小する場合
+    //
+    // // Canvasを縮小
+    // canvas.save();
+    // canvas.scale(scale, scale);
+
     canvas.drawImage(image1, offset1, Paint());
     canvas.drawImage(image2, offset2, Paint());
     canvas.drawImage(image3, offset3, Paint());
     canvas.drawImage(image4, offset4, Paint());
+
+    // canvas.restore();
   }
 
   @override
@@ -301,7 +355,7 @@ class ImagePainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    double scale = 0.8; // 50%のサイズに縮小する場合
+    double scale = 0.1; // 50%のサイズに縮小する場合
 
     // Canvasを縮小
     canvas.save();
